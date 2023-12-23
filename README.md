@@ -1,6 +1,6 @@
 # git-dora-lead-time-calculator
 
-A sample project to play with GraalVM builds on GitHub Actions.
+A project to calculate the DORA metric lead time with the info from a git repo.
 
 To run the latest version
 
