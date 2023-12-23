@@ -40,6 +40,8 @@ jobs:
     - name: Dump environment variables
       run: set
   version:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.output.outputs.new_version }}
