@@ -65,7 +65,7 @@ jobs:
       REVISION: ${{ needs.version.outputs.new_version }}
     steps:
     - uses: actions/checkout@v4.1.2
-    - uses: graalvm/setup-graalvm@v1.2.0
+    - uses: graalvm/setup-graalvm@v1.2.1
       with:
         version: ${{ env.GRAALVM_VERSION }}
         java-version: ${{ env.JAVA_VERSION }}
@@ -99,7 +99,7 @@ jobs:
       REVISION: ${{ needs.version.outputs.new_version }}
     steps:
     - uses: actions/checkout@v4.1.2
-    - uses: graalvm/setup-graalvm@v1.2.0
+    - uses: graalvm/setup-graalvm@v1.2.1
       with:
         version: ${{ env.GRAALVM_VERSION }}
         java-version: ${{ env.JAVA_VERSION }}
@@ -133,7 +133,7 @@ jobs:
       REVISION: ${{ needs.version.outputs.new_version }}
     steps:
     - uses: actions/checkout@v4.1.2
-    - uses: graalvm/setup-graalvm@v1.2.0
+    - uses: graalvm/setup-graalvm@v1.2.1
       with:
         version: ${{ env.GRAALVM_VERSION }}
         java-version: ${{ env.JAVA_VERSION }}
