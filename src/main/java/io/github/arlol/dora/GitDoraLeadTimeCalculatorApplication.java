@@ -5,7 +5,8 @@ import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.stream.StreamSupport;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -20,9 +21,12 @@ public class GitDoraLeadTimeCalculatorApplication {
 		if (args.length == 1 && "--version".equals(args[0])) {
 			Package pkg = GitDoraLeadTimeCalculatorApplication.class
 					.getPackage();
-			String title = pkg.getImplementationTitle();
-			String version = pkg.getImplementationVersion();
-			System.out.println(title + " version \"" + version + "\"");
+			System.out.println(
+					versionString(
+							pkg.getImplementationTitle(),
+							pkg.getImplementationVersion()
+					)
+			);
 			return;
 		}
 		// dora commitIdOfRelease commitIdOfPreviousRelease
@@ -34,29 +38,62 @@ public class GitDoraLeadTimeCalculatorApplication {
 			var deployInstant = ZonedDateTime.parse(args[2]).toInstant();
 			System.out.println("Deploy time in UTC: " + deployInstant);
 
-			var commits = jgit(startCommit, endCommit, deployInstant);
-			var average = StreamSupport.stream(commits.spliterator(), false)
-					.peek(commit -> {
-						System.out.println(
-								"Considering commit " + commit.getId().getName()
-										+ " with author time of "
-										+ commit.getAuthorIdent()
-												.getWhenAsInstant()
-										+ " and message: "
-										+ commit.getShortMessage()
-						);
-					})
-					.map(commit -> {
-						return Duration.between(
-								commit.getAuthorIdent().getWhenAsInstant(),
-								deployInstant
-						);
-					})
-					.reduce((a, b) -> a.plus(b).dividedBy(2L))
-					.orElse(Duration.ZERO);
+			List<RevCommit> commits = commitsBetween(startCommit, endCommit);
+			List<Instant> authorTimes = new ArrayList<>();
+			for (RevCommit commit : commits) {
+				Instant authorTime = commit.getAuthorIdent().getWhenAsInstant();
+				authorTimes.add(authorTime);
+				System.out.println(
+						"Considering commit " + commit.getId().getName()
+								+ " with author time of " + authorTime
+								+ " and message: " + commit.getShortMessage()
+				);
+			}
+			Duration average = averageLeadTime(authorTimes, deployInstant);
 			System.out.println(
 					"Average between author and deploy times: " + average
 			);
+		}
+	}
+
+	/**
+	 * Formats the {@code --version} output line.
+	 */
+	static String versionString(String title, String version) {
+		return title + " version \"" + version + "\"";
+	}
+
+	/**
+	 * Calculates the average lead time between every commit's author time and
+	 * the deploy time.
+	 *
+	 * <p>
+	 * The commits are folded pairwise, so the result is a running average of
+	 * the shape {@code ((d1 + d2) / 2 + d3) / 2 ...} rather than the arithmetic
+	 * mean. Returns {@link Duration#ZERO} when there are no commits.
+	 */
+	static Duration averageLeadTime(
+			List<Instant> authorTimes,
+			Instant deployInstant
+	) {
+		return authorTimes.stream()
+				.map(authorTime -> Duration.between(authorTime, deployInstant))
+				.reduce((a, b) -> a.plus(b).dividedBy(2L))
+				.orElse(Duration.ZERO);
+	}
+
+	/**
+	 * Resolves the commits reachable from {@code startCommitId} but not from
+	 * {@code endCommitId} in the git repository found via the environment.
+	 */
+	static List<RevCommit> commitsBetween(
+			String startCommitId,
+			String endCommitId
+	) {
+		try (Repository repository = openRepository()) {
+			return commitsBetween(repository, startCommitId, endCommitId);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 
@@ -64,16 +101,23 @@ public class GitDoraLeadTimeCalculatorApplication {
 			value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
 			justification = "FileRepositoryBuilder uses generics which spotbugs cant know"
 	)
-	private static Iterable<RevCommit> jgit(
-			String startCommitId,
-			String endCommitId,
-			Instant deployInstant
-	) {
-		try (Repository repository = new FileRepositoryBuilder()
-				.setMustExist(true)
+	private static Repository openRepository() throws IOException {
+		return new FileRepositoryBuilder().setMustExist(true)
 				.readEnvironment()
 				.findGitDir()
-				.build(); RevWalk revWalk = new RevWalk(repository);) {
+				.build();
+	}
+
+	/**
+	 * Resolves the commits reachable from {@code startCommitId} but not from
+	 * {@code endCommitId} in the given repository.
+	 */
+	static List<RevCommit> commitsBetween(
+			Repository repository,
+			String startCommitId,
+			String endCommitId
+	) {
+		try (RevWalk revWalk = new RevWalk(repository)) {
 			RevCommit startCommit = revWalk
 					.parseCommit(repository.resolve(startCommitId));
 			RevCommit endCommit = revWalk
@@ -90,7 +134,12 @@ public class GitDoraLeadTimeCalculatorApplication {
 
 			revWalk.markStart(startCommit);
 			revWalk.markUninteresting(endCommit);
-			return revWalk;
+
+			List<RevCommit> commits = new ArrayList<>();
+			for (RevCommit commit : revWalk) {
+				commits.add(commit);
+			}
+			return commits;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
