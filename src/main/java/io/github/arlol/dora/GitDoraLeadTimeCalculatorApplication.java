@@ -13,8 +13,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 public class GitDoraLeadTimeCalculatorApplication {
 
 	public static void main(String[] args) {
@@ -97,10 +95,6 @@ public class GitDoraLeadTimeCalculatorApplication {
 		}
 	}
 
-	@SuppressFBWarnings(
-			value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
-			justification = "FileRepositoryBuilder uses generics which spotbugs cant know"
-	)
 	private static Repository openRepository() throws IOException {
 		return new FileRepositoryBuilder().setMustExist(true)
 				.readEnvironment()
