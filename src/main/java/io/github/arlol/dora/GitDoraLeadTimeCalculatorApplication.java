@@ -16,7 +16,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class GitDoraLeadTimeCalculatorApplication {
 
-	public static void main(String[] args) {
+	public static void main(String... args) {
 		if (args.length == 1 && "--version".equals(args[0])) {
 			Package pkg = GitDoraLeadTimeCalculatorApplication.class
 					.getPackage();
