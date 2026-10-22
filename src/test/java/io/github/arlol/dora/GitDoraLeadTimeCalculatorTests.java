@@ -27,6 +27,18 @@ class GitDoraLeadTimeCalculatorTests {
 	}
 
 	@Test
+	void leadTimeOfEmptyRangeInOwnRepositoryIsZero() {
+		String out = captureOut(
+				() -> GitDoraLeadTimeCalculatorApplication
+						.main("HEAD", "HEAD", "2024-01-15T12:00:00Z")
+		);
+		assertTrue(
+				out.contains("Average between author and deploy times: PT0S"),
+				"Expected zero average for an empty range"
+		);
+	}
+
+	@Test
 	void averageLeadTimeIsZeroWithoutCommits() {
 		assertEquals(
 				Duration.ZERO,

@@ -36,17 +36,9 @@ public class GitDoraLeadTimeCalculatorApplication {
 			var deployInstant = ZonedDateTime.parse(args[2]).toInstant();
 			System.out.println("Deploy time in UTC: " + deployInstant);
 
-			List<RevCommit> commits = commitsBetween(startCommit, endCommit);
-			List<Instant> authorTimes = new ArrayList<>();
-			for (RevCommit commit : commits) {
-				Instant authorTime = commit.getAuthorIdent().getWhenAsInstant();
-				authorTimes.add(authorTime);
-				System.out.println(
-						"Considering commit " + commit.getId().getName()
-								+ " with author time of " + authorTime
-								+ " and message: " + commit.getShortMessage()
-				);
-			}
+			List<Instant> authorTimes = authorTimes(
+					commitsBetween(startCommit, endCommit)
+			);
 			Duration average = averageLeadTime(authorTimes, deployInstant);
 			System.out.println(
 					"Average between author and deploy times: " + average
@@ -59,6 +51,23 @@ public class GitDoraLeadTimeCalculatorApplication {
 	 */
 	static String versionString(String title, String version) {
 		return title + " version \"" + version + "\"";
+	}
+
+	/**
+	 * Prints every commit and returns its author time.
+	 */
+	static List<Instant> authorTimes(List<RevCommit> commits) {
+		List<Instant> authorTimes = new ArrayList<>();
+		for (RevCommit commit : commits) {
+			Instant authorTime = commit.getAuthorIdent().getWhenAsInstant();
+			authorTimes.add(authorTime);
+			System.out.println(
+					"Considering commit " + commit.getId().getName()
+							+ " with author time of " + authorTime
+							+ " and message: " + commit.getShortMessage()
+			);
+		}
+		return authorTimes;
 	}
 
 	/**
