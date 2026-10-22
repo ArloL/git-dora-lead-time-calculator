@@ -93,6 +93,28 @@ class CommitsBetweenTests {
 		}
 	}
 
+	@Test
+	void authorTimesListsEveryCommitsAuthorTime() throws Exception {
+		Instant first = Instant.parse("2024-01-15T08:00:00Z");
+		Instant second = Instant.parse("2024-01-15T10:00:00Z");
+		try (Git git = Git.init().setDirectory(repositoryDir.toFile()).call()) {
+			RevCommit base = commit(git, "base");
+			commitAt(git, "first", first);
+			commitAt(git, "second", second);
+
+			List<Instant> result = GitDoraLeadTimeCalculatorApplication
+					.authorTimes(
+							GitDoraLeadTimeCalculatorApplication.commitsBetween(
+									git.getRepository(),
+									"HEAD",
+									base.getName()
+							)
+					);
+
+			assertEquals(List.of(second, first), result);
+		}
+	}
+
 	private static RevCommit commit(Git git, String message) throws Exception {
 		return commitAt(git, message, Instant.parse("2024-01-01T00:00:00Z"));
 	}
